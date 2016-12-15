@@ -13,6 +13,9 @@ app.disable('x-powered-by');
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
+const morgan = require('morgan');
+
+app.use(morgan('dev'));
 
 app.get('/pets', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
