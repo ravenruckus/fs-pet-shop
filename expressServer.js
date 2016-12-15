@@ -10,6 +10,10 @@ const app = express();
 
 app.disable('x-powered-by');
 
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+
 // const morgan = require('morgan');
 //
 // app.use(morgan('dev'));
@@ -27,6 +31,48 @@ app.get('/pets', (req, res) => {
     const pets = JSON.parse(petsJSON);
 
     res.send(pets);
+  });
+});
+
+app.post('/pets', (req, res) => {
+  fs.readFile(petsPath, 'utf8', (readErr, petsJSON) => {
+    if (readErr) {
+      console.error(readErr.stack);
+      return res.sendStatus(500);
+    }
+
+    const pets = JSON.parse(petsJSON);
+    const petAge = req.body.age;
+    const petKind = req.body.kind;
+    const petName = req.body.name;
+    // console.log(petName, petKind, petAge);
+    // res.send(petName);
+    const newPet = { age: petAge, kind: petKind, name: petName };
+
+    // pets.push(newPet);
+    // console.log(pets);
+    // res.send(pets);
+
+    if (!newPet) {
+      return res.sentStatus(400);
+    }
+
+    pets.push(newPet);
+
+    const newPetsJSON = JSON.stringify(pets);
+
+    fs.writeFile(petsPath, newPetsJSON, (writeErr) => {
+      if (writeErr) {
+        console.error(writeErr.stack);
+        return res.sendStatus(500);
+      }
+
+      res.set('Content-Type', 'application/json');
+      res.send(newPet);
+    });
+    // console.log(pets);
+    // console.log(pet);
+    // pets.push(pet);
   });
 });
 
