@@ -84,32 +84,39 @@ app.get('/pets/:id', (req, res) => {
   });
 });
 
-  app.patch('/pets/:id', (req, res) => {
-  fs.readFile(petsPath, 'utf8', (readErr, petsJSON) => {
-    if (readErr) {
-      console.error(readErr.stack);
+app.patch('/pets/:id', (req, res) => {
+  fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
+    if (err) {
+      console.error(err.stack);
       return res.sendStatus(500);
     }
 
     const id = Number.parseInt(req.params.id);
-    // res.send(id);
-    // console.log(id)
-
     const pets = JSON.parse(petsJSON);
+
+    const body = req.body;
+    const pet = pets[id];
+    const name = req.body.name;
+    const kind = req.body.kind;
     const age = Number.parseInt(req.body.age);
-    const { kind, name } = req.body;
+
+    if (name) {
+      pet.name = name;
+    }
+    if (kind) {
+      pet.kind = kind;
+    }
+    if (!Number.isNaN(age)) {
+      pet.age = age;
+    }
 
     if (id < 0 || id >= pets.length || Number.isNaN(id)) {
       return res.sendStatus(404);
     }
 
-    const pet = { age, kind, name };
-
-    if (Number.isNaN(age) || !kind || !name) {
+    if (!body) {
       return res.sendStatus(400);
     }
-
-    pets[id] = pet;
 
     const newPetsJSON = JSON.stringify(pets);
 
@@ -119,7 +126,36 @@ app.get('/pets/:id', (req, res) => {
         return res.sendStatus(500);
       }
 
-      res.set('Content-Type', 'text/plain');
+      res.send(pet);
+    });
+  });
+});
+
+app.delete('/pets/:id', (req, res) => {
+  fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
+    if (err) {
+      console.error(err.stack);
+      return res.sendStatus(500);
+    }
+
+    const id = Number.parseInt(req.params.id);
+    const pets = JSON.parse(petsJSON);
+
+    console.log(id);
+
+    if (id < 0 || id >= pets.length || Number.isNaN(id)) {
+      return res.sendStatus(404);
+    }
+
+    const pet = pets.splice(id, 1)[0];
+    const newPetsJSON = JSON.stringify(pets);
+
+    fs.writeFile(petsPath, newPetsJSON, (writeErr) => {
+      if (writeErr) {
+        console.error(writeErr.stack);
+        return res.sendStatus(500);
+      }
+
       res.send(pet);
     });
   });
