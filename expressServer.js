@@ -14,14 +14,6 @@ const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
 
-// const morgan = require('morgan');
-//
-// app.use(morgan('dev'));
-
-// const bodyParser = require('bodyParser');
-
-// app.use(bodyParser.json());
-
 app.get('/pets', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
     if (err) {
@@ -42,19 +34,16 @@ app.post('/pets', (req, res) => {
     }
 
     const pets = JSON.parse(petsJSON);
-    const petAge = req.body.age;
+    const petAge = Number.parseInt(req.body.age);
     const petKind = req.body.kind;
     const petName = req.body.name;
+
     // console.log(petName, petKind, petAge);
     // res.send(petName);
     const newPet = { age: petAge, kind: petKind, name: petName };
 
-    // pets.push(newPet);
-    // console.log(pets);
-    // res.send(pets);
-
-    if (!newPet) {
-      return res.sentStatus(400);
+    if (Number.isNaN(petAge) || !petKind || !petName) {
+      return res.sendStatus(400);
     }
 
     pets.push(newPet);
@@ -70,9 +59,6 @@ app.post('/pets', (req, res) => {
       res.set('Content-Type', 'application/json');
       res.send(newPet);
     });
-    // console.log(pets);
-    // console.log(pet);
-    // pets.push(pet);
   });
 });
 
