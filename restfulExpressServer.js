@@ -10,57 +10,53 @@ const app = express();
 
 app.disable('x-powered-by');
 
+const morgan = require('morgan');
+
+app.use(morgan('short'));
+
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
-const morgan = require('morgan');
-
-app.use(morgan('dev'));
 
 app.get('/pets', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
     if (err) {
-      console.error(err.stack);
-      return res.sendStatus(500);
+      return next(err);
     }
+
     const pets = JSON.parse(petsJSON);
 
     res.send(pets);
   });
 });
 
-app.post('/pets', (req, res) => {
+app.post('/pets', (req, res, next) => {
   fs.readFile(petsPath, 'utf8', (readErr, petsJSON) => {
     if (readErr) {
-      console.error(readErr.stack);
-      return res.sendStatus(500);
+      return next(readErr);
     }
 
     const pets = JSON.parse(petsJSON);
-    const petAge = Number.parseInt(req.body.age);
-    const petKind = req.body.kind;
-    const petName = req.body.name;
+    const age = Number.parseInt(req.body.age);
 
-    // console.log(petName, petKind, petAge);
-    // res.send(petName);
-    const newPet = { age: petAge, kind: petKind, name: petName };
+    const { kind, name } = req.body;
 
-    if (Number.isNaN(petAge) || !petKind || !petName) {
+    if (Number.isNaN(age) || !kind || !name) {
       return res.sendStatus(400);
     }
 
-    pets.push(newPet);
+    const pet = { age, kind, name };
+
+    pets.push(pet);
 
     const newPetsJSON = JSON.stringify(pets);
 
     fs.writeFile(petsPath, newPetsJSON, (writeErr) => {
       if (writeErr) {
-        console.error(writeErr.stack);
-        return res.sendStatus(500);
+        return next(writeErr);
       }
 
-      res.set('Content-Type', 'application/json');
-      res.send(newPet);
+      res.send(pet);
     });
   });
 });
@@ -68,8 +64,7 @@ app.post('/pets', (req, res) => {
 app.get('/pets/:id', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
     if (err) {
-      console.error(err.stack);
-      return res.sendStatus(500);
+      return next(err);
     }
 
     const id = Number.parseInt(req.params.id);
@@ -79,7 +74,6 @@ app.get('/pets/:id', (req, res) => {
       return res.sendStatus(404);
     }
 
-    res.set('Content-Type', 'application/json');
     res.send(pets[id]);
   });
 });
@@ -87,8 +81,7 @@ app.get('/pets/:id', (req, res) => {
 app.patch('/pets/:id', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
     if (err) {
-      console.error(err.stack);
-      return res.sendStatus(500);
+      return next(err);
     }
 
     const id = Number.parseInt(req.params.id);
@@ -96,8 +89,7 @@ app.patch('/pets/:id', (req, res) => {
 
     const body = req.body;
     const pet = pets[id];
-    const name = req.body.name;
-    const kind = req.body.kind;
+    const { kind, name } = req.body;
     const age = Number.parseInt(req.body.age);
 
     if (name) {
@@ -122,8 +114,7 @@ app.patch('/pets/:id', (req, res) => {
 
     fs.writeFile(petsPath, newPetsJSON, (writeErr) => {
       if (writeErr) {
-        console.error(writeErr.stack);
-        return res.sendStatus(500);
+        return next(writeErr);
       }
 
       res.send(pet);
@@ -134,14 +125,11 @@ app.patch('/pets/:id', (req, res) => {
 app.delete('/pets/:id', (req, res) => {
   fs.readFile(petsPath, 'utf8', (err, petsJSON) => {
     if (err) {
-      console.error(err.stack);
-      return res.sendStatus(500);
+      return next(err);
     }
 
     const id = Number.parseInt(req.params.id);
     const pets = JSON.parse(petsJSON);
-
-    console.log(id);
 
     if (id < 0 || id >= pets.length || Number.isNaN(id)) {
       return res.sendStatus(404);
@@ -152,8 +140,7 @@ app.delete('/pets/:id', (req, res) => {
 
     fs.writeFile(petsPath, newPetsJSON, (writeErr) => {
       if (writeErr) {
-        console.error(writeErr.stack);
-        return res.sendStatus(500);
+        return next(writeErr);
       }
 
       res.send(pet);
@@ -163,6 +150,13 @@ app.delete('/pets/:id', (req, res) => {
 
 app.use((req, res) => {
   res.sendStatus(404);
+});
+
+// eslint-disable-next-line max-params
+app.use((err, _req, res, _next) => {
+  // eslint-disable-next-line no-consoles
+  console.error(err.stack);
+  res.sendStatus(500);
 });
 
 const port = process.env.PORT || 8000;
